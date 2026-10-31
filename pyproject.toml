@@ -1,0 +1,13 @@
+[project]
+name = "dengue-nino-peru"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "geopandas>=1.2.0",
+    "ipykernel>=7.4.0",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.11.2",
+    "pandas>=3.1.0",
+    "plotly>=7.1.0",
+    "requests>=2.34.2",
+]
