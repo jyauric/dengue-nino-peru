@@ -183,7 +183,5 @@ cython_debug/
 # ── Proyecto dengue-nino-peru ──
 # tu voz NO se sube (dato personal)
 reel/mi_voz.*
-# el CSV de dengue pesa 118 MB (> límite de GitHub): se descarga con el script
-datos/originales/*.csv
-# excepción: los archivos de vacunación son pequeños y sí se suben
-!datos/originales/vacunacion_*.csv
+# el CSV de dengue pesa 118 MB (> límite de GitHub): se descarga con scripts/obtener_datos.py
+datos/originales/dengue_2000_2025.csv
