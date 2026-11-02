@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dengue y El Niño costero</title>
+<meta name="description" content="Dashboard interactivo: carga de dengue por departamento del Perú (2000–2026) y El Niño costero.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Public+Sans:wght@400..700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f3f4f2; --panel: #fcfcfb; --panel-2: #f0f1ee;
+  --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #75746f;
+  --line: #dddcd6; --line-2: #c4c3bb;
+  --accent: #1c5cab;
+  --serie: #2a78d6; --sel: #eb6834; --mar: #b8461b; --nino: rgba(235, 104, 52, 0.14); --nino-ink: #a8431a;
+  --cero: #e6e5df;
+  --r0: #cde2fb; --r1: #9ec5f4; --r2: #6da7ec; --r3: #3987e5; --r4: #256abf; --r5: #104281;
+  --font-display: "Archivo", "Arial Narrow", Arial, sans-serif;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121211; --panel: #1a1a19; --panel-2: #222220;
+    --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #96958c;
+    --line: #2f2f2c; --line-2: #45443f;
+    --accent: #86b6ef;
+    --serie: #3987e5; --sel: #f08a5d; --mar: #f08a5d; --nino: rgba(240, 138, 93, 0.16); --nino-ink: #f3a27c;
+    --cero: #2a2a27;
+    --r0: #104281; --r1: #1c5cab; --r2: #2a78d6; --r3: #5598e7; --r4: #86b6ef; --r5: #cde2fb;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121211; --panel: #1a1a19; --panel-2: #222220;
+  --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #96958c;
+  --line: #2f2f2c; --line-2: #45443f;
+  --accent: #86b6ef;
+  --serie: #3987e5; --sel: #f08a5d; --mar: #f08a5d; --nino: rgba(240, 138, 93, 0.16); --nino-ink: #f3a27c;
+  --cero: #2a2a27;
+  --r0: #104281; --r1: #1c5cab; --r2: #2a78d6; --r3: #5598e7; --r4: #86b6ef; --r5: #cde2fb;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(1.7rem, 4vw, 2.5rem); font-weight: 780; font-stretch: 88%; line-height: 1.1; }
+h2 { font-size: 1.35rem; font-weight: 740; font-stretch: 90%; line-height: 1.2; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; }
+a { color: var(--accent); }
+.envoltura { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+header { padding: 32px 0 20px; }
+.antetitulo { font-size: 0.8rem; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px; }
+.pregunta { font-size: 1.1rem; color: var(--ink-2); margin-top: 10px; max-width: 60ch; }
+.cobertura { font-size: 0.85rem; color: var(--ink-3); margin-top: 10px; }
+
+/* Controles */
+.controles { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 1px solid var(--line); padding: 10px 0; }
+.controles .envoltura { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: end; }
+.control { display: flex; flex-direction: column; gap: 4px; }
+.control > span { font-size: 0.75rem; font-weight: 600; color: var(--ink-3); }
+select { font: inherit; font-size: 0.9rem; padding: 6px 8px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--panel); color: var(--ink); min-height: 34px; }
+.segmentado { display: inline-flex; border: 1px solid var(--line-2); border-radius: 6px; overflow: hidden; }
+.segmentado button { font: inherit; font-size: 0.85rem; padding: 6px 10px; border: 0; background: var(--panel); color: var(--ink-2); cursor: pointer; min-height: 34px; }
+.segmentado button + button { border-left: 1px solid var(--line-2); }
+.segmentado button[aria-pressed="true"] { background: var(--ink); color: var(--panel); font-weight: 600; }
+.segmentado button:disabled { opacity: 0.45; cursor: not-allowed; }
+.nota-control { font-size: 0.78rem; color: var(--ink-3); flex-basis: 100%; min-height: 1em; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* KPIs */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 18px 0; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.kpi .etiqueta { font-size: 0.8rem; color: var(--ink-2); }
+.kpi .valor { font-family: var(--font-display); font-size: 1.9rem; font-weight: 760; font-stretch: 90%; line-height: 1.15; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.kpi .detalle { font-size: 0.78rem; color: var(--ink-3); margin-top: 4px; }
+
+/* Tarjetas */
+.rejilla { display: grid; grid-template-columns: 1.1fr 1fr; gap: 12px; }
+.tarjeta { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; min-width: 0; }
+.tarjeta .sub { font-size: 0.85rem; color: var(--ink-2); margin-top: 4px; }
+.leyenda { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 0.75rem; color: var(--ink-2); margin-top: 8px; align-items: center; }
+.leyenda i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--ink-2); font-family: var(--font-body); font-size: 11px; }
+.eje line, .eje path { stroke: var(--line-2); }
+.eje text { fill: var(--ink-3); }
+.rejilla-y line { stroke: var(--line); }
+.depto { stroke: var(--panel); stroke-width: 0.8; cursor: pointer; }
+.depto:hover { stroke: var(--ink); stroke-width: 1.5; }
+.depto.activo { stroke: var(--sel); stroke-width: 2.5; }
+.tooltip { position: fixed; pointer-events: none; z-index: 50; background: var(--ink); color: var(--panel); font-size: 0.8rem; padding: 8px 10px; border-radius: 6px; max-width: 260px; opacity: 0; transition: opacity .1s; line-height: 1.4; }
+.tooltip b { font-weight: 700; }
+.fuente-graf { font-size: 0.75rem; color: var(--ink-3); margin-top: 8px; }
+
+/* Tabla de distritos */
+.buscador { font: inherit; font-size: 0.9rem; padding: 6px 10px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--panel); color: var(--ink); width: 100%; max-width: 320px; margin: 10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+th { font-size: 0.75rem; color: var(--ink-3); font-weight: 600; }
+td.num, th.num { text-align: right; }
+
+/* Texto */
+.hallazgos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.hallazgo .numero { font-family: var(--font-display); font-size: 0.85rem; font-weight: 700; color: var(--accent); }
+.hallazgo p, .texto p, .texto li { color: var(--ink-2); font-size: 0.9rem; margin-top: 6px; }
+.texto ul { padding-left: 18px; margin: 6px 0 0; }
+section { margin-top: 28px; }
+section > h2 { margin-bottom: 10px; }
+footer { margin: 32px 0 40px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--ink-3); }
+footer p + p { margin-top: 6px; }
+
+@media (max-width: 860px) {
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .rejilla, .hallazgos { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .kpi .valor { font-size: 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="envoltura">
+  <div class="antetitulo">Perú · Dengue y clima</div>
+  <h1>¿Dónde golpea más el dengue mientras llega El Niño costero 2026-27?</h1>
+  <p class="pregunta"><b>Pregunta:</b> ¿Qué departamentos del Perú enfrentan El Niño costero 2026-27 con mayor carga de dengue?</p>
+  <p class="cobertura">25 departamentos · 2000–2026 (2026 hasta la semana epidemiológica 42, corte 24/10/2026, datos provisionales) · Casos confirmados y probables por lugar probable de infección · Fuentes: CDC-MINSA, INEI, NOAA y ENFEN.</p>
+</header>
+
+<div class="controles" role="region" aria-label="Filtros">
+  <div class="envoltura">
+    <label class="control"><span>Año</span><select id="f-anio"></select></label>
+    <div class="control"><span>Periodo</span>
+      <div class="segmentado" id="f-periodo">
+        <button type="button" data-v="se42" aria-pressed="true">Semanas 1–42</button>
+        <button type="button" data-v="completo" aria-pressed="false">Año completo</button>
+      </div>
+    </div>
+    <div class="control"><span>Indicador</span>
+      <div class="segmentado" id="f-indicador">
+        <button type="button" data-v="incidencia" aria-pressed="true">Incidencia</button>
+        <button type="button" data-v="casos" aria-pressed="false">Casos</button>
+      </div>
+    </div>
+    <label class="control"><span>Departamento</span><select id="f-dep"></select></label>
+    <p class="nota-control" id="nota-control"></p>
+  </div>
+</div>
+
+<main class="envoltura">
+  <div class="kpis" id="kpis"></div>
+
+  <div class="rejilla">
+    <div class="tarjeta">
+      <h3 id="t-mapa">Mapa</h3>
+      <p class="sub">Haz clic en un departamento para filtrar el tablero.</p>
+      <div id="mapa"></div>
+      <div class="leyenda" id="leyenda-mapa"></div>
+    </div>
+    <div class="tarjeta">
+      <h3 id="t-ranking">Ranking</h3>
+      <p class="sub">Los 25 departamentos, de mayor a menor.</p>
+      <div id="ranking"></div>
+    </div>
+  </div>
+
+  <section>
+    <h2>¿Los picos de dengue coincidieron con El Niño costero?</h2>
+    <div class="tarjeta">
+      <h3>Casos semanales en el Perú (2000–2025) y temperatura del mar frente a la costa norte</h3>
+      <p class="sub">Las franjas marcan los episodios de El Niño costero según el ENFEN. Los casos por semana llegan hasta 2025 porque los datos abiertos no publican 2026 por semana; la temperatura del mar llega a 2026. Pasa el cursor para ver cada semana.</p>
+      <div class="leyenda">
+        <span><i style="background: var(--serie)"></i>Casos por semana</span>
+        <span><i style="background: var(--nino); outline: 1px solid var(--nino-ink)"></i>El Niño costero (ENFEN)</span>
+        <span><i style="background: var(--mar); height: 3px; vertical-align: 3px"></i>Anomalía de temperatura del mar, Niño 1+2 (°C)</span>
+      </div>
+      <div id="serie"></div>
+      <p class="fuente-graf">Casos: datos abiertos CDC-MINSA (por semana de inicio de síntomas; 2026 no está disponible por semana). Temperatura del mar: anomalía mensual de la región Niño 1+2 en °C, NOAA CPC. Episodios: ENFEN (2017: dic 2016–may 2017; 2023-24: periodo de alerta, 16/03/2023–05/04/2024).</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>¿Cómo va 2026 frente a años anteriores?</h2>
+    <div class="tarjeta">
+      <h3 id="t-anual">Por año</h3>
+      <p class="sub" id="s-anual"></p>
+      <div id="anual"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Detalle por distrito</h2>
+    <div class="tarjeta">
+      <h3 id="t-distritos">Distritos</h3>
+      <p class="sub">Distrito probable de infección. Disponible para 2000–2025.</p>
+      <input class="buscador" id="buscador" type="search" placeholder="Buscar distrito…" aria-label="Buscar distrito">
+      <div id="distritos"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Hallazgos</h2>
+    <div class="hallazgos">
+      <div class="tarjeta hallazgo">
+        <div class="numero">Hallazgo 1</div>
+        <h3>La carga de 2026 se concentra en la costa norte y en la Amazonía</h3>
+        <p>Hasta la semana epidemiológica 42 de 2026, La Libertad (16 174 casos), Piura (14 761) y Lambayeque (11 506) suman el 51.4 % de los 82 554 casos del país. Por habitante, las mayores incidencias están en Madre de Dios (1 312 casos por 100 mil hab.) y San Martín (963), frente a 238 a nivel nacional.</p>
+      </div>
+      <div class="tarjeta hallazgo">
+        <div class="numero">Hallazgo 2</div>
+        <h3>Los picos de dengue coincidieron con El Niño costero</h3>
+        <p>Durante El Niño costero 2017 (dic 2016–may 2017, según el ENFEN) se notificaron en promedio 2 168 casos por semana, y durante el de 2023-24 (mar 2023–abr 2024), 6 816: unas 4 y 14 veces el promedio del resto de semanas de 2000–2025 (496). En ambos episodios, Tumbes y Piura tuvieron las mayores incidencias del país. Es una coincidencia en el tiempo; no demuestra que El Niño haya causado los brotes.</p>
+      </div>
+      <div class="tarjeta hallazgo">
+        <div class="numero">Hallazgo 3</div>
+        <h3>2026 es el tercer año con más casos desde 2000 a la misma semana</h3>
+        <p>A la semana 42, 2026 suma 82 554 casos, 2.5 veces los de 2025 (32 594); solo lo superan 2024 y 2023. Entre los departamentos con más de 1 000 casos, los que más superan su propio promedio 2021–2025 son Pasco (2.5 veces), Madre de Dios (2.1) y San Martín (1.6). Esto ocurre con El Niño costero 2026-27 en curso (ENFEN, comunicado n.º 19-2026) y con la anomalía de temperatura del mar Niño 1+2 en su valor más alto desde 2000 (+4.69 °C en septiembre de 2026, NOAA).</p>
+      </div>
+    </div>
+    <div class="tarjeta texto">
+      <h3>Respuesta a la pregunta</h3>
+      <p>Con El Niño costero 2026-27 en curso, la mayor carga de dengue está en dos grupos: la costa norte (La Libertad, Piura y Lambayeque por número de casos; Tumbes y Piura fueron los más afectados en los episodios anteriores) y la Amazonía (Madre de Dios y San Martín, por incidencia y por su aumento frente a su propio promedio).</p>
+    </div>
+  </section>
+
+  <section class="texto">
+    <h2>Metodología, fuentes y limitaciones</h2>
+    <div class="rejilla">
+      <div class="tarjeta">
+        <h3>Metodología</h3>
+        <ul>
+          <li>Casos = confirmados + probables, como los reporta el CDC. Se asignan al departamento y distrito probable de infección y a la semana de inicio de síntomas.</li>
+          <li>Incidencia = casos ÷ población estimada del departamento en ese año × 100 000. La incidencia se calculó con la población estimada del INEI para cada año (2000–2026). En una muestra de departamentos, difiere menos de 1 % de la publicada por la sala situacional del CDC para 2023–2025; en 2026, hasta ~2 %.</li>
+          <li>Para comparar con 2026, cuyos datos llegan a la semana 42, cada año se corta en las semanas 1–42 (filtro «Semanas 1–42»).</li>
+          <li>Los totales de 2025 (35 853 casos; 32 594 a la semana 42) y de 2026 (82 554) coinciden con la sala situacional del CDC.</li>
+          <li>Lenguaje no causal: el tablero muestra coincidencias en el tiempo, no causas.</li>
+        </ul>
+      </div>
+      <div class="tarjeta">
+        <h3>Fuentes</h3>
+        <ul>
+          <li><a href="https://www.datosabiertos.gob.pe/dataset/vigilancia-epidemiol%C3%B3gica-de-dengue">Vigilancia epidemiológica de dengue 2000–2025</a>, CDC-MINSA, Plataforma Nacional de Datos Abiertos (licencia ODC-By).</li>
+          <li><a href="https://app7.dge.gob.pe/maps2/shiny_metaxenicas_web/">Sala situacional de enfermedades metaxénicas</a>, CDC-MINSA: casos 2026 por departamento (corte 24/10/2026, semana 42).</li>
+          <li><a href="https://m.inei.gob.pe/estadisticas/indice-tematico/population">INEI, población estimada al 30 de junio por departamento, 2000–2026</a> (Boletín especial n.º 25).</li>
+          <li><a href="https://www.cpc.ncep.noaa.gov/data/indices/sstoi.indices">NOAA Climate Prediction Center</a>: temperatura superficial del mar, región Niño 1+2.</li>
+          <li><a href="https://enfen.imarpe.gob.pe/comunicados/">ENFEN, comunicados oficiales</a> (10-2017, 12-2017, 03-2023, 06-2024 y 19-2026).</li>
+          <li>Límites: INEI (distritos, unidos por departamento).</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tarjeta">
+      <h3>Limitaciones</h3>
+      <ul>
+        <li>Análisis descriptivo: muestra coincidencia en el tiempo, no causalidad. No se analizan otros factores, como lluvias, temperatura del aire o presencia del vector.</li>
+        <li>Los datos de 2026 son provisionales (sala situacional del CDC, corte 24/10/2026, semana 42); el 21.8 % de los casos son probables. Para 2026 no hay datos por distrito ni por semana.</li>
+        <li>Población: estimaciones y proyecciones del INEI (2026 provisional). Para 2026, la sala situacional del CDC reporta para Tumbes una incidencia de 682.5 casos por 100 mil hab.; con la población del INEI, la incidencia es 836.6. En 2024 y 2025 ambas incidencias coinciden (diferencia menor a 1 %).</li>
+        <li>Solo incluye casos notificados al sistema de vigilancia. Se mantienen 149 433 filas idénticas porque la base no trae un identificador; con ellas, los totales coinciden con el CDC.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <p>Elaborado por <b>Josselin Yauri</b> · Tarea 3, curso Data Science con Python · <a href="https://github.com/jyauric/dengue-nino-peru">Repositorio en GitHub</a></p>
+    <p>Uso de IA: el código del tablero se escribió con apoyo de Claude (Anthropic); las decisiones de análisis, la validación de cifras y los textos fueron revisados por la autora.</p>
+  </footer>
+</main>
+
+<div class="tooltip" id="tooltip" role="status" aria-live="polite"></div>
+
+<script>
+const DATOS = __DATOS__;
+
+// ── Utilidades ──
+const fmtEntero = d3.formatLocale({ decimal: ".", thousands: " ", grouping: [3] }).format(",.0f");
+const fmt1 = d3.formatLocale({ decimal: ".", thousands: " ", grouping: [3] }).format(",.1f");
+const TILDES = { "SAN MARTIN": "San Martín", "HUANUCO": "Huánuco", "ANCASH": "Áncash", "JUNIN": "Junín", "APURIMAC": "Apurímac" };
+const nombre = s => TILDES[s] || s.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase()).replace(/ (De|Del|Y) /g, m => m.toLowerCase());
+const sinTildes = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase();
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const tip = document.getElementById("tooltip");
+function mostrarTip(html, ev) {
+  tip.innerHTML = html; tip.style.opacity = 1;
+  const x = Math.min(ev.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+  const y = Math.min(ev.clientY + 14, window.innerHeight - tip.offsetHeight - 8);
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+function ocultarTip() { tip.style.opacity = 0; }
+
+// ── Estado ──
+const ANIOS = d3.range(2000, 2027);
+const DEPTOS = [...new Set(DATOS.dep.map(d => d.departamento))].sort();
+const estado = { anio: 2026, periodo: "se42", indicador: "incidencia", dep: "PERU" };
+const periodoEf = () => (estado.anio === 2026 ? "se42" : estado.periodo);
+const colCasos = () => (periodoEf() === "se42" ? "casos_se42" : "casos");
+
+function filasAnio(anio) { return DATOS.dep.filter(d => d.anio === anio); }
+function resumen(anio, dep, col) {
+  const filas = filasAnio(anio).filter(d => dep === "PERU" || d.departamento === dep);
+  if (col === "casos" && anio === 2026) return null;
+  const casos = d3.sum(filas, d => d[col]);
+  const pob = d3.sum(filas, d => d.poblacion);
+  return { casos, pob, inc: casos / pob * 1e5 };
+}
+function valoresDeptos(anio) {
+  const col = colCasos();
+  return filasAnio(anio).map(d => ({
+    departamento: d.departamento, casos: d[col], poblacion: d.poblacion,
+    incidencia: d[col] / d.poblacion * 1e5
+  }));
+}
+const notaTumbes = (dep, anio) => (dep === "TUMBES" && anio === 2026)
+  ? "<br><i>Nota: la sala situacional del CDC reporta 682.5 por 100 mil hab. para Tumbes en 2026.</i>" : "";
+
+// ── Controles ──
+const selAnio = document.getElementById("f-anio");
+ANIOS.slice().reverse().forEach(a => selAnio.add(new Option(a === 2026 ? "2026 (hasta semana 42)" : a, a)));
+selAnio.value = estado.anio;
+selAnio.addEventListener("change", () => { estado.anio = +selAnio.value; render(); });
+
+const selDep = document.getElementById("f-dep");
+selDep.add(new Option("Todo el Perú", "PERU"));
+DEPTOS.forEach(d => selDep.add(new Option(nombre(d), d)));
+selDep.addEventListener("change", () => { estado.dep = selDep.value; render(); });
+
+function segmentado(id, clave) {
+  const cont = document.getElementById(id);
+  cont.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    if (b.disabled) return;
+    estado[clave] = b.dataset.v; render();
+  }));
+}
+segmentado("f-periodo", "periodo");
+segmentado("f-indicador", "indicador");
+function pintarSegmentados() {
+  document.querySelectorAll("#f-periodo button").forEach(b => {
+    b.setAttribute("aria-pressed", b.dataset.v === periodoEf());
+    b.disabled = estado.anio === 2026 && b.dataset.v === "completo";
+  });
+  document.querySelectorAll("#f-indicador button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === estado.indicador));
+  selDep.value = estado.dep;
+  document.getElementById("nota-control").textContent = estado.anio === 2026
+    ? "2026 solo tiene datos hasta la semana 42: se compara con las semanas 1–42 de cada año."
+    : (periodoEf() === "se42" ? "Semanas 1–42 de cada año: comparable con 2026." : "Año completo (semanas 1–52/53).");
+}
+
+// ── KPIs ──
+function renderKpis() {
+  const col = colCasos();
+  const act = resumen(estado.anio, estado.dep, col);
+  const ant = estado.anio > 2000 ? resumen(estado.anio - 1, estado.dep, col) : null;
+  const lugar = estado.dep === "PERU" ? "Perú" : nombre(estado.dep);
+  const per = periodoEf() === "se42" ? "semanas 1–42" : "año completo";
+  let variacion = "—", detVar = "Sin año anterior en la base";
+  if (ant && ant.casos > 0) {
+    const v = (act.casos / ant.casos - 1) * 100;
+    variacion = (v > 0 ? "+" : "") + fmtEntero(v) + " %";
+    detVar = `Frente a ${estado.anio - 1} (${fmtEntero(ant.casos)} casos, ${per})`;
+  } else if (ant) { detVar = `${estado.anio - 1} no registró casos`; }
+
+  const vals = valoresDeptos(estado.anio).sort((a, b) => b.incidencia - a.incidencia);
+  let k4et, k4val, k4det;
+  if (estado.dep === "PERU") {
+    k4et = "Mayor incidencia"; k4val = nombre(vals[0].departamento);
+    k4det = `${fmt1(vals[0].incidencia)} casos por 100 mil hab.` + (vals[0].departamento === "TUMBES" && estado.anio === 2026 ? " (ver nota de Tumbes)" : "");
+  } else {
+    const pos = vals.findIndex(d => d.departamento === estado.dep) + 1;
+    k4et = "Puesto por incidencia"; k4val = `${pos}.º de 25`;
+    k4det = `Perú: ${fmt1(resumen(estado.anio, "PERU", col).inc)} por 100 mil hab.`;
+  }
+  const tarjetas = [
+    ["Casos", fmtEntero(act.casos), `${lugar}, ${estado.anio} (${per})`],
+    ["Incidencia por 100 mil hab.", fmt1(act.inc), `${lugar}, población estimada INEI ${estado.anio}`],
+    ["Variación anual", variacion, detVar],
+    [k4et, k4val, k4det],
+  ];
+  document.getElementById("kpis").innerHTML = tarjetas.map(([e, v, d]) =>
+    `<div class="kpi"><div class="etiqueta">${e}</div><div class="valor">${v}</div><div class="detalle">${d}</div></div>`).join("");
+}
+
+// ── Mapa ──
+const RAMPA = () => ["--r0", "--r1", "--r2", "--r3", "--r4", "--r5"].map(css);
+function renderMapa() {
+  const cont = document.getElementById("mapa");
+  const ancho = Math.max(280, cont.clientWidth), alto = ancho * 1.25;
+  const vals = new Map(valoresDeptos(estado.anio).map(d => [d.departamento, d]));
+  const ind = estado.indicador;
+  const positivos = [...vals.values()].map(d => d[ind]).filter(v => v > 0);
+  const escala = d3.scaleQuantile().domain(positivos.length ? positivos : [1]).range(RAMPA());
+  const color = v => (v > 0 ? escala(v) : css("--cero"));
+  const proy = d3.geoMercator().fitSize([ancho, alto], DATOS.geo);
+  const camino = d3.geoPath(proy);
+  const svg = d3.select(cont).html("").append("svg").attr("viewBox", `0 0 ${ancho} ${alto}`)
+    .attr("role", "img").attr("aria-label", "Mapa del Perú por departamento");
+  svg.selectAll("path").data(DATOS.geo.features).join("path")
+    .attr("class", f => "depto" + (f.properties.departamento === estado.dep ? " activo" : ""))
+    .attr("d", camino)
+    .attr("fill", f => { const d = vals.get(f.properties.departamento); return d ? color(d[ind]) : css("--cero"); })
+    .on("mousemove", (ev, f) => {
+      const d = vals.get(f.properties.departamento);
+      mostrarTip(`<b>${nombre(f.properties.departamento)}</b> · ${estado.anio}<br>${fmtEntero(d.casos)} casos<br>${fmt1(d.incidencia)} por 100 mil hab.${notaTumbes(d.departamento, estado.anio)}`, ev);
+    })
+    .on("mouseleave", ocultarTip)
+    .on("click", (ev, f) => { const dep = f.properties.departamento; estado.dep = estado.dep === dep ? "PERU" : dep; render(); });
+  svg.selectAll("path.activo").raise();
+
+  const cortes = escala.quantiles();
+  const f = ind === "incidencia" ? fmt1 : fmtEntero;
+  const rangos = RAMPA().map((c, i) => {
+    const lo = i === 0 ? d3.min(positivos) : cortes[i - 1];
+    const hi = i === cortes.length ? d3.max(positivos) : cortes[i];
+    return `<span><i style="background:${c}"></i>${f(lo)}–${f(hi)}</span>`;
+  });
+  document.getElementById("leyenda-mapa").innerHTML =
+    `<span>${ind === "incidencia" ? "Casos por 100 mil hab." : "Casos"}:</span><span><i style="background:${css("--cero")}"></i>0</span>` + (positivos.length ? rangos.join("") : "");
+  document.getElementById("t-mapa").textContent =
+    `${ind === "incidencia" ? "Incidencia" : "Casos"} por departamento, ${estado.anio}${periodoEf() === "se42" ? " (semanas 1–42)" : ""}`;
+}
+
+// ── Ranking ──
+function renderRanking() {
+  const cont = document.getElementById("ranking");
+  const ind = estado.indicador;
+  const datos = valoresDeptos(estado.anio).sort((a, b) => b[ind] - a[ind]);
+  const ancho = Math.max(280, cont.clientWidth), fila = 19;
+  const m = { t: 4, r: 64, b: 4, l: 104 };
+  const alto = m.t + m.b + datos.length * fila;
+  const x = d3.scaleLinear().domain([0, d3.max(datos, d => d[ind]) || 1]).range([m.l, ancho - m.r]);
+  const y = d3.scaleBand().domain(datos.map(d => d.departamento)).range([m.t, alto - m.b]).padding(0.25);
+  const svg = d3.select(cont).html("").append("svg").attr("viewBox", `0 0 ${ancho} ${alto}`)
+    .attr("role", "img").attr("aria-label", "Ranking de departamentos");
+  const g = svg.selectAll("g").data(datos).join("g").style("cursor", "pointer")
+    .on("mousemove", (ev, d) => mostrarTip(`<b>${nombre(d.departamento)}</b> · ${estado.anio}<br>${fmtEntero(d.casos)} casos<br>${fmt1(d.incidencia)} por 100 mil hab.${notaTumbes(d.departamento, estado.anio)}`, ev))
+    .on("mouseleave", ocultarTip)
+    .on("click", (ev, d) => { estado.dep = estado.dep === d.departamento ? "PERU" : d.departamento; render(); });
+  g.append("rect").attr("x", m.l - 100).attr("y", d => y(d.departamento) - 2).attr("width", ancho).attr("height", y.bandwidth() + 4).attr("fill", "transparent");
+  g.append("rect").attr("x", m.l).attr("y", d => y(d.departamento))
+    .attr("width", d => Math.max(0, x(d[ind]) - m.l)).attr("height", y.bandwidth()).attr("rx", 2)
+    .attr("fill", d => d.departamento === estado.dep ? css("--sel") : css("--serie"));
+  g.append("text").attr("x", m.l - 6).attr("y", d => y(d.departamento) + y.bandwidth() / 2).attr("dy", "0.35em")
+    .attr("text-anchor", "end").style("font-weight", d => d.departamento === estado.dep ? 700 : 400)
+    .text(d => nombre(d.departamento));
+  g.append("text").attr("x", d => x(d[ind]) + 4).attr("y", d => y(d.departamento) + y.bandwidth() / 2).attr("dy", "0.35em")
+    .text(d => (ind === "incidencia" ? fmt1 : fmtEntero)(d[ind]));
+  document.getElementById("t-ranking").textContent =
+    `Ranking por ${ind === "incidencia" ? "incidencia (por 100 mil hab.)" : "casos"}, ${estado.anio}`;
+}
+
+// ── Serie semanal + anomalía del mar (dos paneles, mismo eje de tiempo) ──
+const SEM = DATOS.sem.map(d => ({ fecha: new Date(d.fecha_inicio + "T00:00"), casos: d.casos }));
+const MAR = DATOS.noaa.map(d => ({ fecha: new Date(d.fecha + "T00:00"), anom: d.anom_nino12 }));
+const EPI = DATOS.epi.map(d => ({ nombre: d.episodio, ini: new Date(d.inicio + "T00:00"), fin: new Date(d.fin + "T00:00") }));
+function renderSerie() {
+  const cont = document.getElementById("serie");
+  const ancho = Math.max(300, cont.clientWidth);
+  const m = { t: 18, r: 16, b: 26, l: 52 };
+  const h1 = 220, h2 = 110, sep = 34;
+  const alto = m.t + h1 + sep + h2 + m.b;
+  const x = d3.scaleTime().domain([new Date(2000, 0, 1), d3.max(MAR, d => d.fecha)]).range([m.l, ancho - m.r]);
+  const y1 = d3.scaleLinear().domain([0, d3.max(SEM, d => d.casos)]).nice().range([m.t + h1, m.t]);
+  const top2 = m.t + h1 + sep;
+  const ext = d3.extent(MAR, d => d.anom);
+  const y2 = d3.scaleLinear().domain([Math.min(-2, ext[0]), Math.max(2, ext[1])]).nice().range([top2 + h2, top2]);
+  const svg = d3.select(cont).html("").append("svg").attr("viewBox", `0 0 ${ancho} ${alto}`)
+    .attr("role", "img").attr("aria-label", "Serie semanal de casos de dengue y anomalía de temperatura del mar Niño 1+2");
+
+  // franjas de El Niño costero sobre ambos paneles
+  svg.append("g").selectAll("rect").data(EPI).join("rect")
+    .attr("x", d => x(d.ini)).attr("width", d => Math.max(2, x(d.fin) - x(d.ini)))
+    .attr("y", m.t).attr("height", top2 + h2 - m.t).attr("fill", css("--nino"));
+  svg.append("g").selectAll("text").data(EPI).join("text")
+    .attr("x", d => x(d.ini) - 4).attr("y", m.t + 10).attr("text-anchor", "end")
+    .style("fill", css("--nino-ink")).style("font-weight", 600).text(d => d.nombre);
+
+  // panel 1: casos
+  svg.append("g").attr("class", "rejilla-y").selectAll("line").data(y1.ticks(4)).join("line")
+    .attr("x1", m.l).attr("x2", ancho - m.r).attr("y1", d => y1(d)).attr("y2", d => y1(d));
+  svg.append("g").attr("class", "eje").attr("transform", `translate(${m.l},0)`)
+    .call(d3.axisLeft(y1).ticks(4).tickFormat(fmtEntero).tickSize(0)).call(g => g.select(".domain").remove());
+  svg.append("path").datum(SEM).attr("fill", "none").attr("stroke", css("--serie")).attr("stroke-width", 1.5)
+    .attr("d", d3.line().x(d => x(d.fecha)).y(d => y1(d.casos)));
+  svg.append("text").attr("x", m.l).attr("y", m.t - 6).style("font-weight", 600).text("Casos por semana (Perú)");
+
+  // panel 2: anomalía Niño 1+2
+  svg.append("g").attr("class", "rejilla-y").selectAll("line").data(y2.ticks(4)).join("line")
+    .attr("x1", m.l).attr("x2", ancho - m.r).attr("y1", d => y2(d)).attr("y2", d => y2(d));
+  svg.append("line").attr("x1", m.l).attr("x2", ancho - m.r).attr("y1", y2(0)).attr("y2", y2(0)).attr("stroke", css("--ink-3"));
+  svg.append("g").attr("class", "eje").attr("transform", `translate(${m.l},0)`)
+    .call(d3.axisLeft(y2).ticks(4).tickFormat(d => (d > 0 ? "+" : "") + d).tickSize(0)).call(g => g.select(".domain").remove());
+  svg.append("path").datum(MAR).attr("fill", "none").attr("stroke", css("--mar")).attr("stroke-width", 2.5)
+    .attr("d", d3.line().x(d => x(d.fecha)).y(d => y2(d.anom)));
+  svg.append("text").attr("x", m.l).attr("y", top2 - 8).style("font-weight", 600)
+    .text("Temperatura del mar frente a la costa norte: anomalía en °C (Niño 1+2, NOAA)");
+  const maxMar = MAR.reduce((a, b) => (b.anom > a.anom ? b : a));
+  svg.append("circle").attr("cx", x(maxMar.fecha)).attr("cy", y2(maxMar.anom)).attr("r", 4)
+    .attr("fill", css("--ink")).attr("stroke", css("--panel")).attr("stroke-width", 2);
+  svg.append("text").attr("x", x(maxMar.fecha) - 8).attr("y", y2(maxMar.anom) + 4).attr("text-anchor", "end")
+    .style("font-weight", 600).style("fill", css("--ink"))
+    .text(`+${maxMar.anom.toFixed(2)} °C (${d3.timeFormat("%m/%Y")(maxMar.fecha)})`);
+
+  svg.append("g").attr("class", "eje").attr("transform", `translate(0,${top2 + h2})`)
+    .call(d3.axisBottom(x).ticks(ancho < 520 ? d3.timeYear.every(5) : d3.timeYear.every(2)).tickFormat(d3.timeFormat("%Y")));
+
+  // cursor
+  const guia = svg.append("line").attr("y1", m.t).attr("y2", top2 + h2).attr("stroke", css("--ink-3")).attr("stroke-dasharray", "3 3").style("opacity", 0);
+  const bisSem = d3.bisector(d => d.fecha).center, bisMar = d3.bisector(d => d.fecha).left;
+  svg.append("rect").attr("x", m.l).attr("y", m.t).attr("width", ancho - m.l - m.r).attr("height", top2 + h2 - m.t).attr("fill", "transparent")
+    .on("mousemove", ev => {
+      const fecha = x.invert(d3.pointer(ev)[0]);
+      const mm = MAR[Math.max(0, Math.min(MAR.length - 1, bisMar(MAR, fecha) - (fecha < MAR[0].fecha ? 0 : 1)))];
+      guia.attr("x1", d3.pointer(ev)[0]).attr("x2", d3.pointer(ev)[0]).style("opacity", 1);
+      let html = "";
+      if (fecha <= SEM[SEM.length - 1].fecha) {
+        const s = SEM[bisSem(SEM, fecha)];
+        html += `<b>Semana del ${d3.timeFormat("%d/%m/%Y")(s.fecha)}</b><br>${fmtEntero(s.casos)} casos<br>`;
+      } else { html += `<b>${d3.timeFormat("%m/%Y")(mm.fecha)}</b><br>Sin datos semanales de casos<br>`; }
+      html += `Anomalía Niño 1+2 (${d3.timeFormat("%m/%Y")(mm.fecha)}): ${mm.anom > 0 ? "+" : ""}${mm.anom.toFixed(2)} °C`;
+      const ep = EPI.find(e => fecha >= e.ini && fecha <= e.fin);
+      if (ep) html += `<br><i>${ep.nombre}</i>`;
+      mostrarTip(html, ev);
+    })
+    .on("mouseleave", () => { guia.style("opacity", 0); ocultarTip(); });
+}
+
+// ── Barras por año (2026 frente a años anteriores) ──
+function renderAnual() {
+  const cont = document.getElementById("anual");
+  const col = colCasos(), ind = estado.indicador;
+  const datos = ANIOS.map(a => {
+    const r = resumen(a, estado.dep, col);
+    return r ? { anio: a, casos: r.casos, incidencia: r.inc } : null;
+  }).filter(Boolean);
+  const ancho = Math.max(300, cont.clientWidth), alto = 260;
+  const m = { t: 22, r: 8, b: 26, l: 52 };
+  const x = d3.scaleBand().domain(datos.map(d => d.anio)).range([m.l, ancho - m.r]).padding(0.2);
+  const y = d3.scaleLinear().domain([0, d3.max(datos, d => d[ind]) || 1]).nice().range([alto - m.b, m.t]);
+  const f = ind === "incidencia" ? fmt1 : fmtEntero;
+  const svg = d3.select(cont).html("").append("svg").attr("viewBox", `0 0 ${ancho} ${alto}`)
+    .attr("role", "img").attr("aria-label", "Barras por año");
+  svg.append("g").attr("class", "rejilla-y").selectAll("line").data(y.ticks(4)).join("line")
+    .attr("x1", m.l).attr("x2", ancho - m.r).attr("y1", d => y(d)).attr("y2", d => y(d));
+  svg.append("g").attr("class", "eje").attr("transform", `translate(${m.l},0)`)
+    .call(d3.axisLeft(y).ticks(4).tickFormat(fmtEntero).tickSize(0)).call(g => g.select(".domain").remove());
+  svg.append("g").attr("class", "eje").attr("transform", `translate(0,${alto - m.b})`)
+    .call(d3.axisBottom(x).tickValues(datos.map(d => d.anio).filter(a => a % (ancho < 520 ? 5 : 2) === 0 || a === 2026)).tickSize(0));
+  svg.selectAll("rect.barra").data(datos).join("rect").attr("class", "barra")
+    .attr("x", d => x(d.anio)).attr("width", x.bandwidth())
+    .attr("y", d => y(d[ind])).attr("height", d => Math.max(0, y(0) - y(d[ind]))).attr("rx", 2)
+    .attr("fill", d => d.anio === estado.anio ? css("--sel") : css("--serie"))
+    .style("cursor", "pointer")
+    .on("mousemove", (ev, d) => mostrarTip(`<b>${d.anio}</b> · ${estado.dep === "PERU" ? "Perú" : nombre(estado.dep)}<br>${fmtEntero(d.casos)} casos<br>${fmt1(d.incidencia)} por 100 mil hab.`, ev))
+    .on("mouseleave", ocultarTip)
+    .on("click", (ev, d) => { estado.anio = d.anio; selAnio.value = d.anio; render(); });
+  const sel = datos.find(d => d.anio === estado.anio);
+  if (sel) svg.append("text").attr("x", x(sel.anio) + x.bandwidth() / 2).attr("y", y(sel[ind]) - 6)
+    .attr("text-anchor", "middle").style("font-weight", 700).style("fill", css("--ink")).text(f(sel[ind]));
+  const lugar = estado.dep === "PERU" ? "Perú" : nombre(estado.dep);
+  document.getElementById("t-anual").textContent = `${ind === "incidencia" ? "Incidencia" : "Casos"} por año, ${lugar}`;
+  document.getElementById("s-anual").textContent = periodoEf() === "se42"
+    ? "Semanas 1–42 de cada año, para comparar con 2026. En naranja, el año seleccionado; haz clic en una barra para elegir otro año."
+    : "Año completo (2026 no aparece porque solo tiene datos hasta la semana 42). Haz clic en una barra para elegir el año.";
+}
+
+// ── Tabla de distritos ──
+const buscador = document.getElementById("buscador");
+buscador.addEventListener("input", renderDistritos);
+function renderDistritos() {
+  const cont = document.getElementById("distritos");
+  const lugar = estado.dep === "PERU" ? "todo el Perú" : nombre(estado.dep);
+  const anioDis = estado.anio === 2026 ? 2025 : estado.anio;   // 2026 no tiene datos por distrito
+  document.getElementById("t-distritos").textContent = `Distritos con más casos, ${lugar}, ${anioDis}`;
+  const aviso = estado.anio === 2026
+    ? `<p class="sub"><b>2026 no tiene datos por distrito</b> (la sala situacional se descargó por departamento); se muestra 2025, ${periodoEf() === "se42" ? "semanas 1–42" : "año completo"}.</p>` : "";
+  const col = colCasos(), q = sinTildes(buscador.value.trim());
+  const filas = DATOS.dis.filter(d => d.anio === anioDis && (estado.dep === "PERU" || d.departamento === estado.dep)
+    && (!q || sinTildes(d.distrito).includes(q)) && d[col] > 0)
+    .sort((a, b) => b[col] - a[col]).slice(0, 15);
+  if (!filas.length) { cont.innerHTML = aviso + `<p class="sub">Sin distritos con casos para este filtro.</p>`; return; }
+  cont.innerHTML = aviso + `<table><thead><tr><th class="num">#</th><th>Distrito</th><th>Provincia</th><th>Departamento</th><th class="num">Casos</th></tr></thead><tbody>` +
+    filas.map((d, i) => `<tr><td class="num">${i + 1}</td><td>${nombre(d.distrito)}</td><td>${nombre(d.provincia)}</td><td>${nombre(d.departamento)}</td><td class="num">${fmtEntero(d[col])}</td></tr>`).join("") +
+    `</tbody></table>`;
+}
+
+// ── Render general ──
+function render() {
+  pintarSegmentados(); renderKpis(); renderMapa(); renderRanking(); renderAnual(); renderDistritos();
+}
+render(); renderSerie();
+let espera;
+new ResizeObserver(() => { clearTimeout(espera); espera = setTimeout(() => { render(); renderSerie(); }, 150); }).observe(document.querySelector("main"));
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { render(); renderSerie(); });
+</script>
+</body>
+</html>

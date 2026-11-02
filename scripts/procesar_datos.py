@@ -57,6 +57,8 @@ dengue = pd.read_csv(
 
 assert dengue["tipo_dx"].isin(["C", "P"]).all(), "Aparecieron casos que no son C ni P"
 dengue["ubigeo"] = dengue["ubigeo"].str.zfill(6)
+for col in ["departamento", "provincia", "distrito"]:   # el CSV original trae "\ufffd" (�) en lugar de Ñ: FERRE�AFE, CA�ETE…
+    dengue[col] = dengue[col].str.replace("\ufffd", "Ñ")
 dengue["hasta_se42"] = dengue["semana"] <= SE_CORTE
 print(f"Casos 2000-2025 (C+P): {len(dengue):,}")
 
