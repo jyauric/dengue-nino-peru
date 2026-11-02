@@ -1,0 +1,66 @@
+{
+  "titulo": "Dengue y El Niño costero",
+  "escenas": [
+    {
+      "frase": "El mar frente a la costa norte del Perú llegó a estar cuatro punto sesenta y nueve grados por encima de lo normal en septiembre: el valor más alto desde el año dos mil.",
+      "cifra": "+4.69 °C",
+      "etiqueta": "Anomalía del mar Niño 1+2, septiembre 2026 (NOAA)",
+      "imagen": "recursos/serie.png",
+      "cifra_en_texto": true,
+      "wer": 0.029411764705882353
+    },
+    {
+      "frase": "Con El Niño costero en curso, el dengue suma ochenta y dos mil quinientos cincuenta y cuatro casos hasta la semana cuarenta y dos: dos veces y media los de dos mil veinticinco.",
+      "cifra": "82 554",
+      "etiqueta": "Casos de dengue 2026, semanas 1–42 (CDC)",
+      "imagen": "recursos/anual.png",
+      "cifra_en_texto": true,
+      "wer": 0.0
+    },
+    {
+      "frase": "La Libertad, Piura y Lambayeque concentran el cincuenta y uno punto cuatro por ciento de los casos del país.",
+      "cifra": "51.4 %",
+      "etiqueta": "de los casos de 2026, en tres departamentos de la costa norte",
+      "imagen": "recursos/ranking.png",
+      "cifra_en_texto": true,
+      "wer": 0.05263157894736842
+    },
+    {
+      "frase": "Por habitante, Madre de Dios encabeza con mil trescientos doce casos por cada cien mil habitantes, seguido de San Martín.",
+      "cifra": "1 312",
+      "etiqueta": "casos por 100 mil hab. en Madre de Dios, 2026",
+      "imagen": "recursos/mapa.png",
+      "cifra_en_texto": true,
+      "wer": 0.0
+    },
+    {
+      "frase": "Durante El Niño costero de dos mil veintitrés y dos mil veinticuatro, cada semana se notificaron en promedio unas catorce veces los casos de las demás semanas desde el año dos mil. El dengue y El Niño coincidieron en el tiempo, pero eso no prueba que El Niño haya causado los brotes.",
+      "cifra": "14 veces",
+      "etiqueta": "casos por semana en El Niño costero 2023-24 frente a las demás semanas de 2000–2025",
+      "imagen": "recursos/serie.png",
+      "cifra_en_texto": true,
+      "wer": 0.0
+    },
+    {
+      "frase": "Analicé estos datos abiertos en un tablero interactivo. Explóralo con el enlace de mi publicación.",
+      "cifra": "",
+      "etiqueta": "Explora el tablero: enlace en la publicación",
+      "imagen": "recursos/tablero.png",
+      "cifra_en_texto": true,
+      "wer": 0.0
+    }
+  ],
+  "hashtags": [
+    "#Dengue",
+    "#ElNiñoCostero",
+    "#DatosAbiertos",
+    "#DataScience",
+    "#Perú"
+  ],
+  "posts": {
+    "linkedin": "¿Qué departamentos del Perú enfrentan El Niño costero 2026-27 con mayor carga de dengue?\n\nConstruí un tablero interactivo con datos abiertos del CDC-MINSA, el INEI, la NOAA y el ENFEN:\n\n• Hasta la semana 42 de 2026 hay 82 554 casos, 2.5 veces los de 2025 a la misma semana.\n• La Libertad, Piura y Lambayeque concentran el 51.4 % de los casos; por habitante encabezan Madre de Dios y San Martín.\n• En El Niño costero 2023-24, los casos por semana fueron unas 14 veces el promedio del resto de semanas (coincidencia en el tiempo, no causalidad).\n\nTablero: ENLACE_DASHBOARD\nRepositorio: https://github.com/jyauric/dengue-nino-peru\n\nLa voz del video fue generada con IA a partir de mi voz.",
+    "x": "Dengue 2026 en el Perú: 82 554 casos a la semana 42, 2.5 veces 2025, con El Niño costero en curso. Tablero con datos abiertos: ENLACE_DASHBOARD (voz del video generada con IA a partir de mi voz)",
+    "facebook": "Analicé los datos abiertos de dengue y El Niño costero en el Perú en un tablero interactivo: ENLACE_DASHBOARD\n\nLa voz del video fue generada con IA a partir de mi voz."
+  },
+  "cifras_dudosas_en_posts": []
+}
