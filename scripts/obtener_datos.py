@@ -4,6 +4,7 @@
 
 - Dengue 2000-2025: Plataforma Nacional de Datos Abiertos (CDC-MINSA), licencia ODC-By.
 - Temperatura del mar Niño 1+2: NOAA Climate Prediction Center.
+- Población por departamento 2000-2026: INEI.
 Si el archivo ya existe no se vuelve a bajar. Cada descarga queda anotada en
 datos/originales/registro_descargas.csv (fuente, fecha y tamaño).
 """
@@ -20,6 +21,7 @@ ORIG.mkdir(parents=True, exist_ok=True)
 FUENTES = {
     "dengue_2000_2025.csv": "https://www.datosabiertos.gob.pe/sites/default/files/datos_abiertos_vigilancia_dengue_2000_2025_0.csv",
     "noaa_sstoi_nino12.txt": "https://www.cpc.ncep.noaa.gov/data/indices/sstoi.indices",
+    "inei_poblacion_departamento_2000_2026.xlsx": "https://www.inei.gob.pe/media/MenuRecursivo/indices_tematicos/proy_03_4.xlsx",
 }
 # algunos servidores del Estado rechazan peticiones sin un User-Agent de navegador
 HEADERS = {"User-Agent": "Mozilla/5.0 (proyecto academico dengue-nino-peru)"}
